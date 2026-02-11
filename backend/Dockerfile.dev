@@ -1,0 +1,48 @@
+# Development Dockerfile for Inker Backend (Bun Runtime)
+
+FROM oven/bun:1-alpine
+
+# Install dependencies for Prisma, Puppeteer, and development
+RUN apk add --no-cache \
+    dumb-init \
+    openssl \
+    openssl-dev \
+    libc6-compat \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    udev
+
+# Tell Puppeteer to use system Chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package.json bun.lock* ./
+
+# Install all dependencies (including dev dependencies)
+RUN bun install
+
+# Copy Prisma schema
+COPY prisma ./prisma/
+
+# Generate Prisma Client
+RUN bunx prisma generate
+
+# Copy source code
+COPY . .
+
+# Expose ports (API and debug)
+EXPOSE 3002 9229
+
+# Use dumb-init for proper signal handling
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start in development mode with hot reload using Bun's --watch flag
+CMD ["bun", "--watch", "run", "src/main.ts"]

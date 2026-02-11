@@ -1,0 +1,104 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: inker-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: inker_db
+      POSTGRES_USER: inker_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-inker_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inker_user -d inker_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - inker-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: inker-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - inker-network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: ${INKER_BACKEND_IMAGE:-inker-backend:latest}
+    container_name: inker-backend
+    restart: unless-stopped
+    volumes:
+      - uploads_data:/app/uploads
+    ports:
+      - "3002:3002"
+    environment:
+      TZ: ${TZ:-UTC}
+      NODE_ENV: production
+      PORT: 3002
+      DATABASE_URL: postgresql://inker_user:${POSTGRES_PASSWORD:-inker_password}@postgres:5432/inker_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-change-in-production-min-32-chars}
+      JWT_ACCESS_TOKEN_EXPIRY: 7d
+      JWT_REFRESH_TOKEN_EXPIRY: 7d
+      CORS_ORIGINS: "*"
+      ADMIN_PIN: ${ADMIN_PIN:-1111}
+      LOG_LEVEL: info
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - inker-network
+
+  # React Frontend (Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: ${INKER_FRONTEND_IMAGE:-inker-frontend:latest}
+    container_name: inker-frontend
+    restart: unless-stopped
+    ports:
+      - "${INKER_PORT:-80}:80"
+    environment:
+      VITE_API_URL: /api
+    depends_on:
+      - backend
+    networks:
+      - inker-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  uploads_data:
+    driver: local
+
+networks:
+  inker-network:
+    driver: bridge

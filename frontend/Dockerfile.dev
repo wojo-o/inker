@@ -1,0 +1,18 @@
+# Development Dockerfile for React frontend with Bun
+FROM oven/bun:1-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Install dependencies
+COPY package.json bun.lock* ./
+RUN bun install
+
+# Copy project files
+COPY . .
+
+# Expose Vite dev server port
+EXPOSE 5173
+
+# Start development server with Vite (host is configured in vite.config.ts)
+CMD ["bun", "run", "dev"]

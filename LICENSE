@@ -1,0 +1,37 @@
+Inker - Source Available License
+
+Copyright (c) 2025-2026 Wojtek (wojo)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to use
+the Software for personal or internal business purposes, subject to the
+following conditions:
+
+1. ALLOWED USES
+   - You may view, download, and run the Software for personal use.
+   - You may run the Software within your organization for internal purposes.
+   - You may submit bug reports and contribute improvements back to the
+     original repository.
+
+2. RESTRICTIONS
+   - You may NOT redistribute, sublicense, sell, or offer the Software
+     (or any derivative work) as a product or service to third parties.
+   - You may NOT create derivative works or competing products based on
+     the Software.
+   - You may NOT remove or alter this license notice from any copies of
+     the Software.
+
+3. CONTRIBUTIONS
+   By submitting contributions (pull requests, patches, etc.) to the
+   original repository, you grant the copyright holder a perpetual,
+   worldwide, non-exclusive, royalty-free license to use, modify, and
+   distribute your contributions as part of the Software.
+
+4. NO WARRANTY
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+   THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+   DEALINGS IN THE SOFTWARE.
