@@ -1,0 +1,28 @@
+#!/command/with-contenv sh
+exec 2>&1
+
+# Wait for PostgreSQL to be ready
+echo "[backend] Waiting for PostgreSQL..."
+until pg_isready -h localhost -U inker_user -d inker_db -q 2>/dev/null; do
+    sleep 1
+done
+echo "[backend] PostgreSQL is ready"
+
+# Wait for Redis to be ready
+echo "[backend] Waiting for Redis..."
+until redis-cli ping 2>/dev/null | grep -q PONG; do
+    sleep 1
+done
+echo "[backend] Redis is ready"
+
+# Create required directories
+mkdir -p /app/uploads/screens /app/uploads/firmware /app/uploads/widgets /app/uploads/captures /app/uploads/drawings /app/logs
+
+# Run database migrations
+cd /app
+echo "[backend] Running database migrations..."
+bunx prisma db push --skip-generate --accept-data-loss 2>/dev/null || true
+
+# Start backend
+echo "[backend] Starting Inker backend..."
+exec bun run dist/main.js

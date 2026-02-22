@@ -1,0 +1,114 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: inker-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: inker_db
+      POSTGRES_USER: inker_user
+      POSTGRES_PASSWORD: inker_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inker_user -d inker_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - inker-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: inker-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - inker-network
+
+  # Bun Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: inker-backend
+    restart: unless-stopped
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./backend/uploads:/app/uploads
+    ports:
+      - "3002:3002"
+      - "9229:9229"
+    environment:
+      TZ: ${TZ:-UTC}
+      NODE_ENV: development
+      PORT: 3002
+      DATABASE_URL: postgresql://inker_user:inker_password@postgres:5432/inker_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-secret-key-change-in-production-min-32-characters
+      JWT_ACCESS_TOKEN_EXPIRY: 7d
+      JWT_REFRESH_TOKEN_EXPIRY: 7d
+      CORS_ORIGINS: "*"
+      ADMIN_PIN: ${ADMIN_PIN:-1111}
+      LOG_LEVEL: debug
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: sh -c "bun install && bunx prisma generate && bunx prisma db push --skip-generate --accept-data-loss && bun run db:seed && bun run start:dev"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - inker-network
+
+  # React Frontend (Bun + Vite)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: inker-frontend
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: /api
+      VITE_BACKEND_URL: http://backend:3002
+      # VITE_ALLOWED_HOSTS: your-domain.com  # Optional: restrict to specific domains (comma-separated)
+    depends_on:
+      - backend
+    command: sh -c "bun install && bun run dev -- --host 0.0.0.0"
+    networks:
+      - inker-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  inker-network:
+    driver: bridge

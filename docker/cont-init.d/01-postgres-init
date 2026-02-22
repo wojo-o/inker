@@ -1,0 +1,30 @@
+#!/bin/sh
+set -e
+
+PGDATA=/var/lib/postgresql/15/main
+
+if [ ! -f "$PGDATA/PG_VERSION" ]; then
+    echo "[init] Initializing PostgreSQL database..."
+    mkdir -p "$PGDATA"
+    chown -R postgres:postgres /var/lib/postgresql
+
+    su - postgres -c "/usr/lib/postgresql/15/bin/initdb -D $PGDATA"
+
+    # Allow local connections without password, remote with md5
+    cat > "$PGDATA/pg_hba.conf" <<'CONF'
+local all all trust
+host all all 127.0.0.1/32 md5
+host all all ::1/128 md5
+CONF
+
+    # Start postgres temporarily to create user and database
+    su - postgres -c "/usr/lib/postgresql/15/bin/pg_ctl -D $PGDATA -w start"
+    su - postgres -c "psql -c \"CREATE USER inker_user WITH PASSWORD 'inker_password';\""
+    su - postgres -c "psql -c \"CREATE DATABASE inker_db OWNER inker_user;\""
+    su - postgres -c "/usr/lib/postgresql/15/bin/pg_ctl -D $PGDATA -w stop"
+
+    echo "[init] PostgreSQL initialized successfully"
+else
+    echo "[init] PostgreSQL data directory exists, skipping init"
+    chown -R postgres:postgres /var/lib/postgresql
+fi
