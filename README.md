@@ -1,5 +1,7 @@
 <a href="https://buymeacoffee.com/wojo_o" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="40"></a>
 
+1.0.0-Alpha
+
 Self-hosted e-ink device management system for [TRMNL](https://usetrmnl.com/) devices and devices compatible with TRMNL 1.6.9 software. Design screens, create custom widgets, and manage your displays from a modern web interface.
 
 ![Dashboard](https://github.com/user-attachments/assets/fd9affac-5c57-4448-9338-ea8f83add08a)
